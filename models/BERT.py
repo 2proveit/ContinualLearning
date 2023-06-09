@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 from transformers import BertModel, BertConfig
+from datasets.clinc150 import clinc150, clinc150_classes
 
 
 class BertClass(nn.Module):
-    def __init__(self, args):
+    def __init__(self, model_name):
         super(BertClass, self).__init__()
-        self.args = args
-        config = BertConfig.from_pretrained(self.args.model_name)
+
+        config = BertConfig.from_pretrained(model_name)
         config.return_dict = False
         self.bert = BertModel.from_pretrained(self.args.model_name, config)
         self.pre_classifier = nn.Linear(config.hidden_size, config.hidden_size)
