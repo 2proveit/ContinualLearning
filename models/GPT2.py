@@ -1,32 +1,19 @@
-import torch
-from torch.nn import CrossEntropyLoss
-from torch.optim import SGD
+import transformers, torch
+import torch.nn as nn
+import os
+import torch.nn.functional as F
+from transformers import AutoTokenizer, AutoModel, AutoConfig
 
-from avalanche.benchmarks.classic import PermutedMNIST
-from avalanche.models import SimpleMLP
-from avalanche.training import Naive, EWC
+class GPT2(nn.Module):
+    def __init__(self,class_nums,model_name = 'gpt2'):
+        super(GPT2).__init__()
+        config = AutoConfig.from_pretrained(model_name)
+        config.return_dict  =False
+        self.gpt2_tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.gpt2_model = AutoModel.from_pretrained(model_name, config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.classifier = nn.Linear(config.hidden_size,class_nums)
 
-# Config
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# model
-model = SimpleMLP(num_classes=10)
-
-# CL Benchmark Creation
-perm_mnist = PermutedMNIST(n_experiences=3)
-train_stream = perm_mnist.train_stream
-test_stream = perm_mnist.test_stream
-
-# Prepare for training & testing
-optimizer = SGD(model.parameters(), lr=0.001, momentum=0.9)
-criterion = CrossEntropyLoss()
-
-# Continual learning strategy
-cl_strategy = EWC(
-    model, optimizer, criterion,ewc_lambda=0.9, train_mb_size=32, train_epochs=20,
-    eval_mb_size=32, device=device)
-
-# train and test loop over the stream of experiences
-results = []
-for train_exp in train_stream:
-    cl_strategy.train(train_exp)
-    results.append(cl_strategy.eval(test_stream))
+    def forward(x):
+        tokens = self.gpt2_tokenizer()
+        GPT2_out = self.gpt2_model()
